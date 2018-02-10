@@ -111,7 +111,19 @@ class BluetoothTray(Gtk.Application):
             except (AttributeError, TypeError):
                 return Gtk.StatusIcon.position_menu(menu, icon)
 
-        if not(self.rfkill.hard_block or self.rfkill.soft_block):
+        bt_enabled = not(self.rfkill.hard_block or self.rfkill.soft_block)
+
+        item = Gtk.MenuItem()
+        if bt_enabled:
+            item.set_label(_("Turn Bluetooth off"))
+        else:
+            item.set_label(_("Turn Bluetooth on"))
+        item.connect("activate", self.toggle_state_cb, bt_enabled)
+        menu.append(item)
+
+        menu.append(Gtk.SeparatorMenuItem())
+
+        if bt_enabled:
             item = Gtk.MenuItem(label=_("Send files to a device"))
             item.connect("activate", self.send_files_cb)
             menu.append(item)
@@ -130,6 +142,9 @@ class BluetoothTray(Gtk.Application):
 
         device = Gdk.Display.get_default().get_device_manager().get_client_pointer()
         menu.popup_for_device(device, None, None, position_menu_cb, icon, button, time)
+
+    def toggle_state_cb(self, item, state):
+        self.rfkill.try_set_blocked(not state)
 
     def send_files_cb(self, item, data = None):
         subprocess.Popen(["bluetooth-sendto"])
