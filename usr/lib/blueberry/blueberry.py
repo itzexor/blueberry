@@ -248,6 +248,13 @@ class Blueberry(Gtk.Application):
             scrolledwindow.set_shadow_type(Gtk.ShadowType.NONE)
             viewport = scrolledwindow.get_children()[0]
             vbox = viewport.get_children()[0]
+
+            # left/right margins are hardcoded to 128 for the vbox
+            # in the ui defintion. half of that looks twice as good.
+            vbox = viewport.get_children()[0]
+            vbox.set_margin_start(64)
+            vbox.set_margin_end(64)
+
             explanation_label = vbox.get_children()[0]
             name = self.get_default_adapter_name()
             if name is not None:
