@@ -291,7 +291,6 @@ class Blueberry(Gtk.Application):
             os.system("/usr/lib/blueberry/blueberry-obex-agent.py &")
         else:
             self.settings.set_boolean("obex-enabled", False)
-            os.system("killall -9 blueberry-obex-agent");
         self.update_status()
 
     def on_adapter_name_changed(self, entry):

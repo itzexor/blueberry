@@ -718,22 +718,36 @@ class AgentManager(Base):
 
 if __name__ == '__main__':
     settings = Gio.Settings(schema="org.blueberry")
-    if settings.get_boolean("obex-enabled"):
-        try:
-            dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-            mainloop = GLib.MainLoop()
-            service = TransferService()
-            service.load()
-            cont = True
-            while cont:
-                try:
-                    mainloop.run()
-                except KeyboardInterrupt:
-                    service.unload()
-                    cont = False
-        except Exception as e:
-            dprint("Something went wrong in blueberry-obex-agent: %s" % e)
-            dprint("Setting org.blueberry obex-enabled to False and exiting.")
+    service = mainloop = setting_id = None
+    disable_on_exit = False
+
+    def exit_if_disabled(*args):
+        if not settings.get_boolean("obex-enabled"):
+            dprint("org.blueberry obex-enabled is False, exiting.")
+            sys.exit(0)
+
+    exit_if_disabled()
+
+    try:
+        setting_id = settings.connect("changed::obex-enabled", exit_if_disabled)
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        mainloop = GLib.MainLoop()
+        service = TransferService()
+        service.load()
+        mainloop.run()
+    except (SystemExit, KeyboardInterrupt):
+        pass
+    except Exception as e:
+        dprint("Something went wrong in blueberry-obex-agent: %s" % e)
+        dprint("Setting org.blueberry obex-enabled to False and exiting.")
+        disable_on_exit = True
+        sys.exit(1)
+    finally:
+        if service:
+            service.unload()
+        if setting_id:
+            settings.disconnect(setting_id)
+        if mainloop:
+            mainloop.quit()
+        if disable_on_exit:
             settings.set_boolean("obex-enabled", False)
-    else:
-        dprint("org.blueberry obex-enabled is False, exiting.")
